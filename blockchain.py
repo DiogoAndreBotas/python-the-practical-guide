@@ -1,3 +1,5 @@
+from functools import reduce
+
 MINING_REWARD = 10
 GENESIS_BLOCK = {'previous_hash': '', 'index': 0, 'transactions': []}
 
@@ -22,21 +24,23 @@ def get_balance(participant):
         if transaction['sender'] == participant
     ]
     transaction_sender.append(open_transaction_sender)
-    amount_sent = 0
 
-    for transaction in transaction_sender:
-        if len(transaction) > 0:
-            amount_sent += transaction[0]
+    amount_sent = reduce(
+        lambda add, transaction: add + sum(transaction),
+        transaction_sender,
+        0
+    )
 
     transaction_recipient = [
-        [
-            transaction['amount'] for transaction in block['transactions'] if transaction['recipient'] == participant
-        ] for block in blockchain
+        [transaction['amount'] for transaction in block['transactions'] if transaction['recipient'] == participant]
+        for block in blockchain
     ]
-    amount_received = 0
-    for transaction in transaction_recipient:
-        if len(transaction) > 0:
-            amount_received += transaction[0]
+
+    amount_received = reduce(
+        lambda add, transaction: add + sum(transaction),
+        transaction_recipient,
+        0
+    )
 
     return amount_received - amount_sent
 
@@ -154,8 +158,11 @@ while user_choice != 'q':
             print('There are invalid transactions!')
     elif user_choice == 'h':
         if len(blockchain) >= 1:
-            blockchain[0] = {'previous_hash': '', 'index': 0,
-                             'transactions': [{'sender': 'Person 1', 'recipient': 'Person 2', 'amount': '100'}]}
+            blockchain[0] = {
+                'previous_hash': '',
+                'index': 0,
+                'transactions': [{'sender': 'Person 1', 'recipient': 'Person 2', 'amount': '100'}]
+            }
     elif user_choice != 'q':
         print('Invalid option! Please choose an option from the list')
 
@@ -163,6 +170,7 @@ while user_choice != 'q':
         print('Invalid blockchain!')
         break
 
-    print(get_balance('Person 1'))
+    participant = 'Person 1'
+    print(f'Balance of {participant}: {get_balance(participant):6.2f}')
 else:
     print('Exiting program...')
