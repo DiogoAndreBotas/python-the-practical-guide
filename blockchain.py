@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from functools import reduce
+from json import dumps, loads
 
 from hash_util import hash_block, hash_string_256
 
@@ -15,6 +16,45 @@ blockchain = [GENESIS_BLOCK]
 open_transactions = []
 owner = 'Person 1'
 participants = {'Person 1'}
+
+
+def load_data():
+    with open('blockchain.txt', mode='r') as file:
+        file_content = file.readlines()
+        global blockchain, open_transactions
+
+        blockchain = loads(file_content[0][:-1])
+        blockchain = [{
+            'previous_hash': block['previous_hash'],
+            'index': block['index'],
+            'transactions': [
+                OrderedDict([
+                    ('sender', tx['sender']),
+                    ('recipient', tx['recipient']),
+                    ('amount', tx['amount'])
+                ]) for tx in block['transactions']
+            ],
+            'proof': block['proof']
+        } for block in blockchain]
+
+        open_transactions = loads(file_content[1])
+        open_transactions = [
+            OrderedDict([
+                ('sender', tx['sender']),
+                ('recipient', tx['recipient']),
+                ('amount', tx['amount'])
+            ]) for tx in open_transactions
+        ]
+
+
+load_data()
+
+
+def save_data():
+    with open('blockchain.txt', mode='w') as file:
+        file.write(dumps(blockchain))
+        file.write('\n')
+        file.write(dumps(open_transactions))
 
 
 def valid_proof(transactions, last_hash, proof):
@@ -84,6 +124,8 @@ def add_transaction(recipient, sender=owner, amount=1.0):
         open_transactions.append(transaction)
         participants.add(sender)
         participants.add(recipient)
+
+        save_data()
         return True
 
     return False
@@ -105,6 +147,7 @@ def mine_block():
             'proof': proof
         }
     )
+
     return True
 
 
@@ -160,6 +203,7 @@ while user_choice != 'q':
     elif user_choice == '2':
         if mine_block():
             open_transactions = []
+            save_data()
     elif user_choice == '3':
         output_blockchain_blocks()
     elif user_choice == '4':
